@@ -314,6 +314,8 @@ void Advance::FirstRKStepW(const double tau, SCGrid &arena_prev,
         QuestRevert(tau, grid_pt_f, ieta, ix, iy);
         if (DATA.causality_method == 1){
             nCausalityConstraints(grid_pt_f);
+        }else if (DATA.causality_method == 2){
+            sCausalityConstraints(grid_pt_f);
         }
         if (DATA.turn_on_diff == 1) {
             QuestRevert_qmu(tau, grid_pt_f, ieta, ix, iy);
@@ -325,25 +327,25 @@ void Advance::solveEigenvaluesWmunu(Cell_small *grid_pt) {
 
     MatrixXd A = MatrixXd::Zero(4,4);
 
-    A(0,0) = grid_pt->Wmunu[0];
-    A(0,1) = - grid_pt->Wmunu[1];
-    A(0,2) = - grid_pt->Wmunu[2];
-    A(0,3) = - grid_pt->Wmunu[3];
+    A(0,0) = - grid_pt->Wmunu[0];
+    A(0,1) = grid_pt->Wmunu[1];
+    A(0,2) = grid_pt->Wmunu[2];
+    A(0,3) = grid_pt->Wmunu[3];
 
-    A(1,0) = grid_pt->Wmunu[1];
-    A(1,1) = - grid_pt->Wmunu[4];
-    A(1,2) = - grid_pt->Wmunu[5];
-    A(1,3) = - grid_pt->Wmunu[6];
+    A(1,0) = - grid_pt->Wmunu[1];
+    A(1,1) = grid_pt->Wmunu[4];
+    A(1,2) = grid_pt->Wmunu[5];
+    A(1,3) = grid_pt->Wmunu[6];
 
-    A(2,0) = grid_pt->Wmunu[2];
-    A(2,1) = - grid_pt->Wmunu[5];
-    A(2,2) = - grid_pt->Wmunu[7];
-    A(2,3) = - grid_pt->Wmunu[8];
+    A(2,0) = - grid_pt->Wmunu[2];
+    A(2,1) = grid_pt->Wmunu[5];
+    A(2,2) = grid_pt->Wmunu[7];
+    A(2,3) = grid_pt->Wmunu[8];
 
-    A(3,0) = grid_pt->Wmunu[3];
-    A(3,1) = - grid_pt->Wmunu[6];
-    A(3,2) = - grid_pt->Wmunu[8];
-    A(3,3) = - grid_pt->Wmunu[9];
+    A(3,0) = - grid_pt->Wmunu[3];
+    A(3,1) = grid_pt->Wmunu[6];
+    A(3,2) = grid_pt->Wmunu[8];
+    A(3,3) = grid_pt->Wmunu[9];
 
     EigenSolver <MatrixXd> es;
     es.compute(A, false);
@@ -365,13 +367,6 @@ void Advance::solveEigenvaluesWmunu(Cell_small *grid_pt) {
 }
 
 //check causality first, if violated, calculate alpha and store them in an array. (alpha = 1 otherwise), pick the min alpha between 0 and 1
-/*
-    double a1 = - transportPart_n13/(viscousPart1_n13 * grid_pt->pi_b / (eps + P) + viscousPart2_n13 * abs(grid_pt->Lambdas[0])/ (eps + P));
-    double a3 = - transportPart_n13/(viscousPart1_n13 * grid_pt->pi_b / (eps + P) + viscousPart2_n13 * grid_pt->Lambdas[2] / (eps + P));
-    double a5 = - transportPart_n56/(viscousPart1_n56 * grid_pt->pi_b / (eps + P) + viscousPart2_n56 * grid_pt->Lambdas[0] / (eps + P));
-    double a6 = - (1. - transportPart_n56)/((1. - viscousPart1_n56) * grid_pt->pi_b / (eps + P) + (1. - viscousPart2_n56) * grid_pt->Lambdas[2] / (eps + P));
-
-*/
 void Advance::nCausalityConstraints(Cell_small *grid_pt){
     double eps  = grid_pt->epsilon;
     double rhob = grid_pt->rhob;
@@ -398,7 +393,7 @@ void Advance::nCausalityConstraints(Cell_small *grid_pt){
         if (nCondition[i] < 0){
             switch(i){
                 case 0: //n1
-                    alp = - transportPart_n13/(viscousPart1_n13 * grid_pt->pi_b / (eps + P) + viscousPart2_n13 * abs(grid_pt->Lambdas[0])/ (eps + P));        
+                    alp = - transportPart_n13/(viscousPart1_n13 * grid_pt->pi_b / (eps + P) + viscousPart2_n13 * abs(grid_pt->Lambdas[0])/ (eps + P));
                     break;
                 case 1: //n3
                     alp = - transportPart_n13/(viscousPart1_n13 * grid_pt->pi_b / (eps + P) + viscousPart2_n13 * grid_pt->Lambdas[2] / (eps + P));
@@ -426,39 +421,184 @@ void Advance::nCausalityConstraints(Cell_small *grid_pt){
     for (double& lam : grid_pt->Lambdas){
         lam = lam * minAlp;
     }
+}
 
-    // test when it violates
-    double N1 = transportPart_n13 + viscousPart1_n13 * grid_pt->pi_b / (eps + P) + viscousPart2_n13 * abs(grid_pt->Lambdas[0]) / (eps + P);
-    double N3 = transportPart_n13 + viscousPart1_n13 * grid_pt->pi_b / (eps + P) + viscousPart2_n13 * grid_pt->Lambdas[2] / (eps + P);
-    double N5 = transportPart_n56 + viscousPart1_n56 * grid_pt->pi_b / (eps + P) + viscousPart2_n56 * grid_pt->Lambdas[0] / (eps + P);
-    double N6 = (1. - transportPart_n56) + (1. - viscousPart1_n56) * grid_pt->pi_b / (eps + P) + (1. - viscousPart2_n56) * grid_pt->Lambdas[2] / (eps + P);
-    std::vector<double> nACondition {N1, N3, N5, N6};
-    for (int i = 0; i < nACondition.size(); i++){
-        if (nACondition[i] < -1e-15 && eps > 1e-15){
+bool Advance::BinarySearch(double left, double right, double (*func)(double, Cell_small*, void*), void* pt2object, double& result, Cell_small *grid_pt){
+    while(right - left > 1e-4){
+        if (right < left){
+            std::cout << "Upper beta bound is smaller than the lower beta bound" << std::endl;
+            return false;
+        }  
+        if (func(right, grid_pt, pt2object)*func(left, grid_pt, pt2object) > 0){
+            return false;
+        }    
+        result = (left + right) / 2.;
+        if (func(result, grid_pt, pt2object) < 0){
+            right = result;
+        }else{
+            left = result;
+        }
+    }
+    return true;
+}
+
+double Advance::Suff5(double beta, Cell_small *grid_pt){
+    double eps = grid_pt->epsilon;
+    double rhob = grid_pt->rhob;
+    double cs2 = eos.get_cs2(eps, rhob);
+    double P = eos.get_pressure(eps, rhob);
+    double L1 = grid_pt->Lambdas[0] / (eps + P);
+    double L3 = grid_pt->Lambdas[2] / (eps + P);
+    double Pi = grid_pt->pi_b / (eps + P);
+    double s_relax = 1./transport_coeffs_.get_shear_relax_time_factor();
+    double b_relax = 1./transport_coeffs_.get_bulk_relax_time_factor() * (1./3. - cs2) * (1./3. - cs2);
+    double lam_piPi = transport_coeffs_.get_lambda_piPi_coeff();
+    double tau_pipi = transport_coeffs_.get_tau_pipi_coeff();
+    double del_PiPi = transport_coeffs_.get_delta_PiPi_coeff();
+    double del_pipi = transport_coeffs_.get_delta_pipi_coeff();
+    double lam_Pipi = transport_coeffs_.get_lambda_Pipi_coeff();
+
+    return 1. - cs2 - 4./3.*s_relax - b_relax - beta*((cs2 - 1. + 2./3.*lam_piPi + del_PiPi)*Pi + (del_pipi + 1./3.*tau_pipi + lam_Pipi + cs2)*L3 + abs(L1)) 
+    - beta*beta*(del_pipi - 1./12.*tau_pipi)*(lam_Pipi + cs2 - 1./12.*tau_pipi)*(L3 + abs(L1))*(L3 + abs(L1))/(1. - s_relax + beta*((1. - 1./2.*lam_piPi)*Pi - abs(L1) - 1./2.*tau_pipi*L3));
+}
+double Advance::Suff7(double beta, Cell_small *grid_pt){
+    double eps = grid_pt->epsilon;
+    double rhob = grid_pt->rhob;
+    double cs2 = eos.get_cs2(eps, rhob);
+    double P = eos.get_pressure(eps, rhob);
+    double L1 = grid_pt->Lambdas[0] / (eps + P);
+    double L3 = grid_pt->Lambdas[2] / (eps + P);
+    double Pi = grid_pt->pi_b / (eps + P);
+    double s_relax = 1./transport_coeffs_.get_shear_relax_time_factor();
+    double b_relax = 1./transport_coeffs_.get_bulk_relax_time_factor() * (1./3. - cs2) * (1./3. - cs2);
+    double lam_piPi = transport_coeffs_.get_lambda_piPi_coeff();
+    double tau_pipi = transport_coeffs_.get_tau_pipi_coeff();
+    double del_PiPi = transport_coeffs_.get_delta_PiPi_coeff();
+    double del_pipi = transport_coeffs_.get_delta_pipi_coeff();
+    double lam_Pipi = transport_coeffs_.get_lambda_Pipi_coeff();
+
+    return (s_relax + beta*(1./2.*lam_piPi*Pi - 1./2.*tau_pipi*abs(L1)))*(s_relax + beta*(1./2.*lam_piPi*Pi - 1./2.*tau_pipi*abs(L1))) 
+    - beta*beta*(del_pipi - 1./12.*tau_pipi)*(lam_Pipi + cs2 - 1./12.*tau_pipi)*(L3 + abs(L1))*(L3 + abs(L1));
+}
+double Advance::Suff8(double beta, Cell_small *grid_pt){
+    double eps = grid_pt->epsilon;
+    double rhob = grid_pt->rhob;
+    double cs2 = eos.get_cs2(eps, rhob);
+    double P = eos.get_pressure(eps, rhob);
+    double L1 = grid_pt->Lambdas[0] / (eps + P);
+    double L2 = grid_pt->Lambdas[1] / (eps + P);
+    double L3 = grid_pt->Lambdas[2] / (eps + P);
+    double Pi = grid_pt->pi_b / (eps + P);
+    double s_relax = 1./transport_coeffs_.get_shear_relax_time_factor();
+    double b_relax = 1./transport_coeffs_.get_bulk_relax_time_factor() * (1./3. - cs2) * (1./3. - cs2);
+    double lam_piPi = transport_coeffs_.get_lambda_piPi_coeff();
+    double tau_pipi = transport_coeffs_.get_tau_pipi_coeff();
+    double del_PiPi = transport_coeffs_.get_delta_PiPi_coeff();
+    double del_pipi = transport_coeffs_.get_delta_pipi_coeff();
+    double lam_Pipi = transport_coeffs_.get_lambda_Pipi_coeff();
+
+    return 4./3.*s_relax + b_relax + cs2 + beta*((2./3.*lam_piPi + del_PiPi + cs2)*Pi - (del_pipi + 1./3.*tau_pipi - lam_Pipi + cs2)*abs(L1)) 
+    - (1. + beta*(Pi + L2))*(1. + beta*(Pi + L3))/3./(1. + beta*(Pi - abs(L1)))/(1. + beta*(Pi - abs(L1)))*(1. + 2.*s_relax + beta*((1. + lam_piPi)*Pi - abs(Pi) + tau_pipi*L3));
+}
+
+double Advance::Suff5_Hook(double beta, Cell_small *grid_pt, void* pt2object){
+    Advance* mySelf = (Advance*) pt2object;
+    return mySelf->Suff5(beta, grid_pt);
+}
+double Advance::Suff7_Hook(double beta, Cell_small *grid_pt, void* pt2object){
+    Advance* mySelf = (Advance*) pt2object;
+    return mySelf->Suff7(beta, grid_pt);
+}
+double Advance::Suff8_Hook(double beta, Cell_small *grid_pt, void* pt2object){
+    Advance* mySelf = (Advance*) pt2object;
+    return mySelf->Suff8(beta, grid_pt);
+}
+void Advance::sCausalityConstraints(Cell_small *grid_pt){
+    double eps = grid_pt->epsilon;
+    double rhob = grid_pt->rhob;
+    double cs2 = eos.get_cs2(eps, rhob);
+    double P = eos.get_pressure(eps, rhob);
+    double L1 = grid_pt->Lambdas[0] / (eps + P);
+    double L3 = grid_pt->Lambdas[2] / (eps + P);
+    double Pi = grid_pt->pi_b / (eps + P);
+    double s_relax = 1./transport_coeffs_.get_shear_relax_time_factor();
+    double b_relax = 1./transport_coeffs_.get_bulk_relax_time_factor() * (1./3. - cs2) * (1./3. - cs2);
+    double lam_piPi = transport_coeffs_.get_lambda_piPi_coeff();
+    double tau_pipi = transport_coeffs_.get_tau_pipi_coeff();
+    double del_PiPi = transport_coeffs_.get_delta_PiPi_coeff();
+    double del_pipi = transport_coeffs_.get_delta_pipi_coeff();
+    double lam_Pipi = transport_coeffs_.get_lambda_Pipi_coeff();
+
+    double s1 = 1. - s_relax - L1 + (1. - 1./2.*lam_piPi)*Pi - 1./2.*tau_pipi*L3; //>=0
+    double s2 = 2.*s_relax + lam_piPi*Pi - tau_pipi*abs(L1); //>=0 
+    double s6 = 1./3.*s_relax + b_relax + cs2 + (1./6.*lam_piPi + del_PiPi + cs2)*Pi + (1./6.*tau_pipi - del_pipi + lam_Pipi - cs2)*abs(L1);//>=0
+
+    std::vector<double> sCondition {s1, s2, s6};
+    double minBeta = 1;
+
+    for (int i = 0; i < sCondition.size(); i++){
+        double beta = 1;
+        if (sCondition[i] < 0){
             switch(i){
-                case 0: //n1
-                    std::cout << "N1 " << nACondition[i] << std::endl;
+                case 0: //s1
+                    beta = (s_relax - 1.)/(-abs(L1) + (1. - 1./2.*lam_piPi)*Pi - 1./2.*tau_pipi*L3);
                     break;
-                case 1: //n3
-                    std::cout << "N3 " << nACondition[i] << std::endl;
+                case 1: //s2
+                    beta = (-2.*s_relax)/(lam_piPi*Pi - tau_pipi*abs(L1));
                     break;
-                case 2: //n5
-                    std::cout << "N5 " << nACondition[i] << std::endl;
-                    std::cout<<"alpha value " << minAlp << std::endl;
-                    std::cout<< "cs2 " << cs2 << std::endl;
-                    std::cout<< "eps " << eps << std::endl;
-                    break;
-                case 3: //n6
-                    std::cout << "N6 " << nACondition[i] << std::endl;
-                    std::cout<<"alpha value " << minAlp << std::endl;
-                    std::cout<< "cs2 " << cs2 << std::endl;
-                    std::cout<< "eps " << eps << std::endl;
+                case 2: //s6
+                    beta = -(1./3.*s_relax + b_relax + cs2)/((1./6.*lam_piPi + del_PiPi + cs2)*Pi + (1./6.*tau_pipi - del_pipi + lam_Pipi - cs2)*abs(L1));
                     break;
             }
         }
+        if (beta > 0 && beta < minBeta){
+            minBeta = beta;
+        }else if (beta < 0){
+            minBeta = 0;
+        } 
     }
-//    std::cout << "------------------------" << std::endl;
+    if (Suff5(minBeta, grid_pt) < 0){
+        double result = 0;
+        Advance objA(eos, DATA, hydro_source_terms_ptr);
+        bool status = BinarySearch(0., minBeta, Advance::Suff5_Hook, (void*) &objA, result, grid_pt);
+        if (status){
+            minBeta = result;
+        }else if(cs2 < 0.15){
+            minBeta = 0.;
+        }else{
+            std::cout << "Suff5 Fails Binary Search" << std::endl;
+        }
+    }
+    if (Suff7(minBeta, grid_pt) < 0){
+        double result = 0;
+        Advance objB(eos, DATA, hydro_source_terms_ptr);
+        bool status = BinarySearch(0., minBeta, Advance::Suff7_Hook, (void*) &objB, result, grid_pt);
+        if (status){
+            minBeta = result;
+        }else{
+            std::cout << "Suff7 Fails Binary Search" << std::endl;
+        }
+    }
+    if (Suff8(minBeta, grid_pt) < 0){
+        double result = 0;
+        Advance objC(eos, DATA, hydro_source_terms_ptr);
+        bool status = BinarySearch(0., minBeta, Advance::Suff8_Hook, (void*) &objC, result, grid_pt);
+        if (status){
+            minBeta = result;
+        }else{
+            std::cout << "Suff8 Fails Binary Search" << std::endl;
+        }
+    }
+    grid_pt->pi_b = grid_pt->pi_b * minBeta;
+
+    for (double& pi : grid_pt->Wmunu){
+        pi = pi * minBeta;
+    }
+    for (double& lam : grid_pt->Lambdas){
+        lam = lam * minBeta;
+    }
 }
+
 
 // update results after RK evolution to grid_pt
 void Advance::UpdateTJbRK(const ReconstCell &grid_rk, Cell_small &grid_pt) {

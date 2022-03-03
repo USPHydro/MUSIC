@@ -272,7 +272,7 @@ double TransportCoeffs::get_temperature_dependent_zeta_over_s_AsymGaussian(
     double bulk = B_norm*exp(-Tdiff*Tdiff);
     return(bulk);
 }
-
+//unused
 double TransportCoeffs::get_causality_bulk_factor(double cs2, double bulkPi, double Lam3){
     //mod 1
     double transportPart_n6 = 1. - cs2 - 4./3. * 1./get_shear_relax_time_factor();
@@ -281,11 +281,9 @@ double TransportCoeffs::get_causality_bulk_factor(double cs2, double bulkPi, dou
         - get_lambda_Pipi_coeff() * (1./3.- cs2) - cs2) * Lam3;
     double denom = transportPart_n6;
     double modFactor = (transportPart_n6 + viscousPi_n6 + viscousLambda_n6)/denom;
-    // f >= 1/C_zeta * 1/1 - cs2 + 4/3 * 1/C_eta by n6 definition
     if (modFactor < 1./get_bulk_relax_time_factor() * (1./3. - cs2) * (1./3. - cs2) * 1./transportPart_n6 && modFactor > 0 && modFactor < 1.){
         return modFactor;
     }else{
         return 1.;
     }
-    //make sure f is within reasonable range
 }

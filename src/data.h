@@ -243,9 +243,9 @@ typedef struct init_data {
 
     // causality modification method
     int causality_method;
-    // 0: don't do anything
-    // 1: questrevert
-    // 2: modify bulk relaxation time
+    // 0: without causality modification
+    // 1: questrevert with necessary causality conditions
+    // 2: questrevert with sufficient causality conditions
 } InitData;
 
 #endif  // SRC_DATA_H_

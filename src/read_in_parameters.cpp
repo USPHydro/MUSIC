@@ -187,10 +187,10 @@ InitData read_in_parameters(std::string input_file) {
     parameter_list.mode = tempmode;
 
     //Causality method
-    // 0 : do nothing
-    // 1 : questrevert
-    // 2 : modify bulk relaxation time
-    int tempcausalitymode = 0;
+    // 0: without causality modification
+    // 1: questrevert with necessary causality conditions
+    // 2: questrevert with sufficient causality conditions
+    int tempcausalitymode = 2;
     tempinput = Util::StringFind4(input_file, "causality_method");
     if (tempinput != "empty") {
         istringstream(tempinput) >> tempcausalitymode;

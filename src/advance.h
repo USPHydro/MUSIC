@@ -63,7 +63,16 @@ class Advance {
                      const int rk_flag);
     void solveEigenvaluesWmunu(Cell_small *grid_pt);
     void nCausalityConstraints(Cell_small *grid_pt);
+    void sCausalityConstraints(Cell_small *grid_pt);
+    bool BinarySearch(double left, double right, double (*func)(double, Cell_small*, void*), void* pt2Object, double& result, Cell_small *grid_pt);
+    double Suff5(double beta, Cell_small *grid_pt);
+    double Suff7(double beta, Cell_small *grid_pt);
+    double Suff8(double beta, Cell_small *grid_pt);
+    static double Suff5_Hook(double beta, Cell_small *grid_pt, void* pt2object);
+    static double Suff7_Hook(double beta, Cell_small *grid_pt, void* pt2object);
+    static double Suff8_Hook(double beta, Cell_small *grid_pt, void* pt2object);
 
+    
     double MaxSpeed(const double tau, const int direc,
                     const ReconstCell &grid_p);
 
