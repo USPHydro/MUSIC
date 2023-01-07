@@ -10,6 +10,8 @@
 #include <Eigen/Eigenvalues>
 #include <Eigen/Core>
 #include <vector>
+#include <fstream>
+#include <iomanip>
 
 #include "util.h"
 #include "data.h"
@@ -313,9 +315,9 @@ void Advance::FirstRKStepW(const double tau, SCGrid &arena_prev,
     if (DATA.Initial_profile != 0 && DATA.Initial_profile != 1) {
         QuestRevert(tau, grid_pt_f, ieta, ix, iy);
         if (DATA.causality_method == 1){
-            nCausalityConstraints(grid_pt_f);
+            nCausalityConstraints(grid_pt_f, tau);
         }else if (DATA.causality_method == 2){
-            sCausalityConstraints(grid_pt_f);
+            sCausalityConstraints(grid_pt_f, tau);
         }
         if (DATA.turn_on_diff == 1) {
             QuestRevert_qmu(tau, grid_pt_f, ieta, ix, iy);
@@ -367,7 +369,7 @@ void Advance::solveEigenvaluesWmunu(Cell_small *grid_pt) {
 }
 
 //check causality first, if violated, calculate alpha and store them in an array. (alpha = 1 otherwise), pick the min alpha between 0 and 1
-void Advance::nCausalityConstraints(Cell_small *grid_pt){
+void Advance::nCausalityConstraints(Cell_small *grid_pt, double tau){
     double eps  = grid_pt->epsilon;
     double rhob = grid_pt->rhob;
     double cs2 = eos.get_cs2(eps, rhob);
@@ -421,6 +423,15 @@ void Advance::nCausalityConstraints(Cell_small *grid_pt){
     for (double& lam : grid_pt->Lambdas){
         lam = lam * minAlp;
     }
+
+    //write reduction factor and energy density into a file
+    if (eps > 0.01){
+    std::ofstream myFile("necessary_causality_reduction_factor_wtau.dat", std::fstream::out | std::fstream::app);
+    myFile << std::scientific << std::setw(18) << std::setprecision(8) 
+       << minAlp << "   " << eps << "   " << tau << std::endl;
+    myFile.close();
+    }
+    
 }
 
 bool Advance::BinarySearch(double left, double right, double (*func)(double, Cell_small*, void*), void* pt2object, double& result, Cell_small *grid_pt){
@@ -513,7 +524,7 @@ double Advance::Suff8_Hook(double beta, Cell_small *grid_pt, void* pt2object){
     Advance* mySelf = (Advance*) pt2object;
     return mySelf->Suff8(beta, grid_pt);
 }
-void Advance::sCausalityConstraints(Cell_small *grid_pt){
+void Advance::sCausalityConstraints(Cell_small *grid_pt, double tau){
     double eps = grid_pt->epsilon;
     double rhob = grid_pt->rhob;
     double cs2 = eos.get_cs2(eps, rhob);
@@ -597,6 +608,15 @@ void Advance::sCausalityConstraints(Cell_small *grid_pt){
     for (double& lam : grid_pt->Lambdas){
         lam = lam * minBeta;
     }
+
+    //write reduction factor and energy density into a file
+    if (eps > 0.01){
+    std::ofstream myFile("sufficient_causality_reduction_factor_wtau.dat", std::fstream::out | std::fstream::app);
+    myFile << std::scientific << std::setw(18) << std::setprecision(8) 
+       << minBeta << "   " << eps << "   " << tau << std::endl;
+    myFile.close(); 
+    }
+
 }
 
 
