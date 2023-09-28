@@ -185,7 +185,10 @@ void MUSIC::initialize_hydro_from_jetscape_preequilibrium_vectors(
         vector<double> pi_11_in, vector<double> pi_12_in,
         vector<double> pi_13_in, vector<double> pi_22_in,
         vector<double> pi_23_in, vector<double> pi_33_in,
-        vector<double> Bulk_pi_in) {
+        vector<double> Bulk_pi_in, double tau0_in,
+        vector<double> rhob_in, vector<double> q0_in,
+        vector<double> q1_in,vector<double> q2_in,
+        vector<double>q3_in) {
 
     DATA.Initial_profile = 42;
     clean_all_the_surface_files();
@@ -194,7 +197,7 @@ void MUSIC::initialize_hydro_from_jetscape_preequilibrium_vectors(
     if (nz > 1) {
         DATA.boost_invariant = false;
         DATA.delta_eta = dz;
-        DATA.eta_size = nz*dz;
+        DATA.eta_size = nz*dz - dz;
     } else {
         DATA.boost_invariant = true;
         DATA.delta_eta = 0.1;
@@ -207,7 +210,7 @@ void MUSIC::initialize_hydro_from_jetscape_preequilibrium_vectors(
     initialization.get_jetscape_preequilibrium_vectors(
         e_in, P_in, u_tau_in, u_x_in, u_y_in, u_eta_in,
         pi_00_in, pi_01_in, pi_02_in, pi_03_in, pi_11_in, pi_12_in, pi_13_in,
-        pi_22_in, pi_23_in, pi_33_in, Bulk_pi_in);
+        pi_22_in, pi_23_in, pi_33_in, Bulk_pi_in, tau0_in,rhob_in,q0_in,q1_in,q2_in,q3_in);
     initialization.InitArena(arenaFieldsPrev_, arenaFieldsCurr_,
                              arenaFieldsNext_);
     flag_hydro_initialized = 1;

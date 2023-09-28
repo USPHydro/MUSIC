@@ -1177,6 +1177,19 @@ void set_parameter(InitData &parameter_list, std::string parameter_name,
         parameter_list.bulk_3_T_peak_in_GeV = value;
     if (parameter_name == "bulk_viscosity_3_lambda_asymm")
         parameter_list.bulk_3_lambda_asymm = value;
+    
+    if (parameter_name == "Include_Rhob_Yes_1_No_0")
+        parameter_list.turn_on_rhob = static_cast<int>(value);
+    if (parameter_name == "turn_on_baryon_diffusion")
+        parameter_list.turn_on_diff = static_cast<int>(value);
+    if (parameter_name == "kappa_coefficient")
+        parameter_list.kappa_coefficient = value;
+
+    if (parameter_name == "boost_invariant")
+        parameter_list.boost_invariant = static_cast<int>(value);
+
+    if (parameter_name == "EOS_to_use")
+        parameter_list.whichEOS = static_cast<int>(value);
 }
 
 

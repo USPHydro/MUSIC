@@ -97,7 +97,10 @@ class MUSIC {
         std::vector<double> pi_11_in, std::vector<double> pi_12_in,
         std::vector<double> pi_13_in, std::vector<double> pi_22_in,
         std::vector<double> pi_23_in, std::vector<double> pi_33_in,
-        std::vector<double> Bulk_pi_in);
+        std::vector<double> Bulk_pi_in, double tau0_in,
+        std::vector<double> rhob_in,  std::vector<double> q0_in,
+        std::vector<double> q1_in, std::vector<double> q2_in,
+        std::vector<double>q3_in);
 
     void get_hydro_info(
         const double x, const double y, const double z, const double t,

@@ -39,6 +39,12 @@ class Init {
     std::vector<double> jetscape_initial_pi_23;
     std::vector<double> jetscape_initial_pi_33;
     std::vector<double> jetscape_initial_bulk_pi;
+    double jetscape_initial_tau0;
+    std::vector<double> jetscape_initial_rhob;
+    std::vector<double> jetscape_initial_q0;
+    std::vector<double> jetscape_initial_q1;
+    std::vector<double> jetscape_initial_q2;
+    std::vector<double> jetscape_initial_q3;
 
  public:
     Init(const EOS &eos, InitData &DATA_in,
@@ -80,7 +86,10 @@ class Init {
         std::vector<double> pi_11_in, std::vector<double> pi_12_in,
         std::vector<double> pi_13_in, std::vector<double> pi_22_in,
         std::vector<double> pi_23_in, std::vector<double> pi_33_in,
-        std::vector<double> Bulk_pi_in);
+        std::vector<double> Bulk_pi_in, double tau0_in,
+        std::vector<double> rhob_in,  std::vector<double> q0_in,
+        std::vector<double> q1_in, std::vector<double> q2_in,
+         std::vector<double>q3_in);
     void clean_up_jetscape_arrays();
 
     double eta_profile_plateau(const double eta, const double eta_0,

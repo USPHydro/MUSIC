@@ -142,6 +142,7 @@ void Init::InitArena(Fields &arenaFieldsPrev, Fields &arenaFieldsCurr,
         DATA.ny = ny;
         DATA.x_size = DATA.delta_x*nx;
         DATA.y_size = DATA.delta_y*ny;
+        DATA.tau0 = jetscape_initial_tau0;
 
         music_message << "neta = " << DATA.neta
                       << ", nx = " << nx << ", ny = " << ny;
@@ -152,7 +153,8 @@ void Init::InitArena(Fields &arenaFieldsPrev, Fields &arenaFieldsCurr,
         music_message.flush("info");
         music_message << "x_size = "     << DATA.x_size
                       << " fm, y_size = "   << DATA.y_size
-                      << " fm, eta_size = " << DATA.eta_size;
+                      << " fm, eta_size = " << DATA.eta_size
+                      << ", tau0 = " << DATA.tau0 << " fm/c.";
         music_message.flush("info");
     } else if (DATA.Initial_profile == 101) {
         music_message << "Using Initial_profile = " << DATA.Initial_profile;
@@ -1118,7 +1120,10 @@ void Init::get_jetscape_preequilibrium_vectors(
         vector<double> pi_11_in, vector<double> pi_12_in,
         vector<double> pi_13_in, vector<double> pi_22_in,
         vector<double> pi_23_in, vector<double> pi_33_in,
-        vector<double> Bulk_pi_in) {
+        vector<double> Bulk_pi_in, double tau0_in,
+        vector<double> rhob_in, vector<double> q0_in,
+        vector<double> q1_in,vector<double> q2_in,
+        vector<double>q3_in) {
     jetscape_initial_energy_density = e_in;
     jetscape_initial_pressure       = P_in;
     jetscape_initial_u_tau          = u_tau_in;
@@ -1136,6 +1141,12 @@ void Init::get_jetscape_preequilibrium_vectors(
     jetscape_initial_pi_23          = pi_23_in;
     jetscape_initial_pi_33          = pi_33_in;
     jetscape_initial_bulk_pi        = Bulk_pi_in;
+    jetscape_initial_tau0           = tau0_in;
+    jetscape_initial_rhob           = rhob_in;
+    jetscape_initial_q0             = q0_in;
+    jetscape_initial_q1             = q1_in;
+    jetscape_initial_q2             = q2_in;
+    jetscape_initial_q3             = q3_in;
 }
 
 
@@ -1145,15 +1156,25 @@ void Init::initial_with_jetscape(int ieta, Fields &arenaFieldsPrev,
     const int ny = arenaFieldsCurr.nY();
     const int neta = arenaFieldsCurr.nEta();
 
+    std::ofstream ic_eps_file("ic_eps.dat");
+    std::ofstream ic_T_file("ic_T.dat");
+    std::ofstream ic_ux_file("ic_ux.dat");
+    std::ofstream ic_uy_file("ic_uy.dat");
+    std::ofstream ic_ueta_file("ic_ueta.dat");
+    std::ofstream ic_Bulk_file("ic_Bulk.dat");
+    std::ofstream ic_P_file("ic_P.dat");
+    std::ofstream ic_rhob_file("ic_rhob.dat");
+    std::ofstream ic_diff_file("ic_diff.dat");
+
     for (int ix = 0; ix < nx; ix++) {
         for (int iy = 0; iy< ny; iy++) {
-            const double rhob = 0.0;
+            double rhob = 0.0;
             double epsilon = 0.0;
             const int idx = (ny*neta)*ix + neta*iy + ieta;
             epsilon = (jetscape_initial_energy_density[idx]
                        *DATA.sFactor/hbarc);  // 1/fm^4
             epsilon = std::max(Util::small_eps, epsilon);
-
+            rhob = jetscape_initial_rhob[idx];
             double pressure = eos.get_pressure(epsilon, rhob);
 
             int Fidx = arenaFieldsCurr.getFieldIdx(ix, iy, ieta);
@@ -1178,18 +1199,56 @@ void Init::initial_with_jetscape(int ieta, Fields &arenaFieldsPrev,
             arenaFieldsCurr.Wmunu_[8][Fidx] = DATA.sFactor*jetscape_initial_pi_23[idx]/hbarc*DATA.tau0;
             arenaFieldsCurr.Wmunu_[9][Fidx] = DATA.sFactor*jetscape_initial_pi_33[idx]/hbarc*DATA.tau0*DATA.tau0;
 
+            arenaFieldsCurr.Wmunu_[10][Fidx] = jetscape_initial_q0[idx];
+            arenaFieldsCurr.Wmunu_[11][Fidx] = jetscape_initial_q1[idx];
+            arenaFieldsCurr.Wmunu_[12][Fidx] = jetscape_initial_q2[idx];
+            arenaFieldsCurr.Wmunu_[13][Fidx] = jetscape_initial_q3[idx]*DATA.tau0;
+
             arenaFieldsPrev.e_[Fidx] = arenaFieldsCurr.e_[Fidx];
             arenaFieldsPrev.rhob_[Fidx] = arenaFieldsPrev.rhob_[Fidx];
             for (int i = 0; i < 4; i++) {
                 arenaFieldsPrev.u_[i][Fidx] = arenaFieldsCurr.u_[i][Fidx];
             }
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 15; i++) {
                 arenaFieldsPrev.Wmunu_[i][Fidx] = (
                                     arenaFieldsCurr.Wmunu_[i][Fidx]);
             }
             arenaFieldsPrev.piBulk_[Fidx] = arenaFieldsCurr.piBulk_[Fidx];
+                        ic_eps_file << ix*DATA.delta_x -DATA.x_size/2 << " " << iy*DATA.delta_y - DATA.y_size/2 << " "
+                        << ieta*DATA.delta_eta - DATA.eta_size/2<< " " << epsilon << std::endl;
+            ic_T_file << ix*DATA.delta_x -DATA.x_size/2 << " " << iy*DATA.delta_y - DATA.y_size/2 << " "
+                      << ieta*DATA.delta_eta - DATA.eta_size/2<< " " << eos.get_temperature(epsilon, rhob) << std::endl;
+            ic_ux_file << ix*DATA.delta_x -DATA.x_size/2 << " " << iy*DATA.delta_y - DATA.y_size/2 << " "
+                       << ieta*DATA.delta_eta - DATA.eta_size/2<< " " << jetscape_initial_u_x[idx] << std::endl;
+            ic_uy_file << ix*DATA.delta_x -DATA.x_size/2 << " " << iy*DATA.delta_y - DATA.y_size/2 << " "
+                          << ieta*DATA.delta_eta - DATA.eta_size/2<< " " << jetscape_initial_u_y[idx] << std::endl;
+            ic_ueta_file << ix*DATA.delta_x -DATA.x_size/2 << " " << iy*DATA.delta_y - DATA.y_size/2 << " "
+                            << ieta*DATA.delta_eta - DATA.eta_size/2<< " " << jetscape_initial_u_eta[idx]*DATA.tau0 << std::endl;
+            ic_Bulk_file << ix*DATA.delta_x -DATA.x_size/2 << " " << iy*DATA.delta_y - DATA.y_size/2 << " "
+                            << ieta*DATA.delta_eta - DATA.eta_size/2<< " " << (DATA.sFactor/hbarc*(
+                jetscape_initial_pressure[idx] + jetscape_initial_bulk_pi[idx])
+                - pressure) << std::endl;
+            ic_P_file << ix*DATA.delta_x -DATA.x_size/2 << " " << iy*DATA.delta_y - DATA.y_size/2 << " "
+                            << ieta*DATA.delta_eta - DATA.eta_size/2<< " " << pressure << std::endl;
+            ic_rhob_file << ix*DATA.delta_x -DATA.x_size/2 << " " << iy*DATA.delta_y - DATA.y_size/2 << " "
+                        << ieta*DATA.delta_eta - DATA.eta_size/2<< " " << rhob << std::endl;
+            ic_diff_file << ix*DATA.delta_x -DATA.x_size/2 << " " << iy*DATA.delta_y - DATA.y_size/2 << " "
+                        << ieta*DATA.delta_eta - DATA.eta_size/2<< " " << jetscape_initial_q0[idx] << " " << jetscape_initial_q1[idx]
+                        << " " << jetscape_initial_q2[idx]<<" "<< jetscape_initial_q3[idx]<< std::endl;
+            
         }
     }
+    if (DATA.useEpsFO ==1){
+        music_message << "Using energy for Freeze-out, Freeze-out  energy: " << DATA.epsilonFreeze;
+        music_message.flush("info");
+    }
+    else{
+    music_message << "Using temperature for Freeze-out, Freeze-out  temperature: " << DATA.TFO;
+    music_message.flush("info");}
+                                 
+    music_message << "Using baryon diffusion:" << DATA.turn_on_diff;
+    music_message.flush("info");
+    
 }
 
 
@@ -1212,6 +1271,10 @@ void Init::clean_up_jetscape_arrays() {
     jetscape_initial_pi_23.clear();
     jetscape_initial_pi_33.clear();
     jetscape_initial_bulk_pi.clear();
+    jetscape_initial_q0.clear();
+    jetscape_initial_q1.clear();
+    jetscape_initial_q2.clear();
+    jetscape_initial_q3.clear();
 }
 
 
