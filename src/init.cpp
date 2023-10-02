@@ -1209,7 +1209,7 @@ void Init::initial_with_jetscape(int ieta, Fields &arenaFieldsPrev,
             for (int i = 0; i < 4; i++) {
                 arenaFieldsPrev.u_[i][Fidx] = arenaFieldsCurr.u_[i][Fidx];
             }
-            for (int i = 0; i < 15; i++) {
+            for (int i = 0; i < 14; i++) {
                 arenaFieldsPrev.Wmunu_[i][Fidx] = (
                                     arenaFieldsCurr.Wmunu_[i][Fidx]);
             }
