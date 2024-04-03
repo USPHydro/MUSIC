@@ -58,9 +58,11 @@ class MUSIC {
 
     //! This function initialize hydro
     void initialize_hydro();
+    void initialize_hydro_xscape();
 
     //! This function change the parameter value in DATA
     void set_parameter(std::string parameter_name, double value);
+    void check_parameters();
 
     //! this is a shell function to run hydro
     int run_hydro();
@@ -78,6 +80,10 @@ class MUSIC {
     //! This function setup source terms from dynamical initialization
     void generate_hydro_source_terms();
 
+    //! This function setup source terms from dynamical initialization
+    void generate_hydro_source_terms(
+            std::vector< std::vector<double> > QCDStringList);
+
     //! This function calls routine to check EoS
     void check_eos();
 
@@ -88,7 +94,7 @@ class MUSIC {
     void clean_all_the_surface_files();
 
     void initialize_hydro_from_jetscape_preequilibrium_vectors(
-        const double dx, const double dz, const double z_max, const int nz,
+        const double tau0, const double dx, const double dz, const double z_max, const int nz,
         std::vector<double> e_in, std::vector<double> P_in,
         std::vector<double> u_tau_in, std::vector<double> u_x_in,
         std::vector<double> u_y_in,   std::vector<double> u_eta_in,

@@ -76,6 +76,18 @@ void MUSIC::generate_hydro_source_terms() {
 }
 
 
+//! This function setup source terms from dynamical initialization
+void MUSIC::generate_hydro_source_terms(
+        std::vector< std::vector<double> > QCDStringList) {
+    if (DATA.Initial_profile == 13 || DATA.Initial_profile == 131) {
+        // MC-Glauber-LEXUS
+        auto hydro_source_ptr = std::shared_ptr<HydroSourceStrings> (
+                                new HydroSourceStrings (DATA, QCDStringList));
+        add_hydro_source_terms(hydro_source_ptr);
+    }
+}
+
+
 void MUSIC::clean_all_the_surface_files() {
     system_status_ = system("rm surface*.dat 2> /dev/null");
 }
@@ -87,11 +99,27 @@ void MUSIC::set_parameter(std::string parameter_name, double value) {
 }
 
 
+void MUSIC::check_parameters() {
+    ReadInParameters::check_parameters(DATA);
+}
+
+
 //! This function initialize hydro
 void MUSIC::initialize_hydro() {
     clean_all_the_surface_files();
 
     generate_hydro_source_terms();
+
+    Init initialization(eos, DATA, hydro_source_terms_ptr);
+    initialization.InitArena(arenaFieldsPrev_, arenaFieldsCurr_,
+                             arenaFieldsNext_);
+    flag_hydro_initialized = 1;
+}
+
+
+//! This function initialize hydro within the XSCAPE framework
+void MUSIC::initialize_hydro_xscape() {
+    clean_all_the_surface_files();
 
     Init initialization(eos, DATA, hydro_source_terms_ptr);
     initialization.InitArena(arenaFieldsPrev_, arenaFieldsCurr_,
@@ -176,7 +204,7 @@ void MUSIC::output_transport_coefficients() {
 
 
 void MUSIC::initialize_hydro_from_jetscape_preequilibrium_vectors(
-        const double dx, const double dz, const double z_max, const int nz,
+        const double tau0, const double dx, const double dz, const double z_max, const int nz,
         vector<double> e_in, vector<double> P_in,
         vector<double> u_tau_in, vector<double> u_x_in,
         vector<double> u_y_in,   vector<double> u_eta_in,
@@ -205,6 +233,7 @@ void MUSIC::initialize_hydro_from_jetscape_preequilibrium_vectors(
     }
     DATA.delta_x = dx;
     DATA.delta_y = dx;
+    DATA.tau0 = tau0;
 
     Init initialization(eos, DATA, hydro_source_terms_ptr);
     initialization.get_jetscape_preequilibrium_vectors(
