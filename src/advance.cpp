@@ -143,7 +143,7 @@ void Advance::FirstRKStepT(
                     tau_rk, x_local, y_local, eta_s_local, u_local, j_mu);
         for (int ii = 0; ii < 4; ii++) {
             qi_source[ii] = tauRkFactor*j_mu[ii];
-            if (isnan(qi_source[ii])) {
+            if (std::isnan(qi_source[ii])) {
                 music_message << "qi_source is nan. i = " << ii;
                 music_message.flush("error");
                 exit(0);
