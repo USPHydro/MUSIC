@@ -213,7 +213,7 @@ void MUSIC::initialize_hydro_from_jetscape_preequilibrium_vectors(
         vector<double> pi_11_in, vector<double> pi_12_in,
         vector<double> pi_13_in, vector<double> pi_22_in,
         vector<double> pi_23_in, vector<double> pi_33_in,
-        vector<double> Bulk_pi_in, double tau0_in,
+        vector<double> Bulk_pi_in,
         vector<double> rhob_in, vector<double> q0_in,
         vector<double> q1_in,vector<double> q2_in,
         vector<double>q3_in) {
