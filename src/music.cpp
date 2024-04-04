@@ -239,7 +239,7 @@ void MUSIC::initialize_hydro_from_jetscape_preequilibrium_vectors(
     initialization.get_jetscape_preequilibrium_vectors(
         e_in, P_in, u_tau_in, u_x_in, u_y_in, u_eta_in,
         pi_00_in, pi_01_in, pi_02_in, pi_03_in, pi_11_in, pi_12_in, pi_13_in,
-        pi_22_in, pi_23_in, pi_33_in, Bulk_pi_in, tau0_in,rhob_in,q0_in,q1_in,q2_in,q3_in);
+        pi_22_in, pi_23_in, pi_33_in, Bulk_pi_in, tau0,rhob_in,q0_in,q1_in,q2_in,q3_in);
     initialization.InitArena(arenaFieldsPrev_, arenaFieldsCurr_,
                              arenaFieldsNext_);
     flag_hydro_initialized = 1;
