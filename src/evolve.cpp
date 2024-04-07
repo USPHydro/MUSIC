@@ -90,6 +90,9 @@ int Evolve::EvolveIt(Fields &arenaFieldsPrev, Fields &arenaFieldsCurr,
     const double max_allowed_e_increase_factor = 5.;
     double tau = tau0;
     const int NtauBlock = 200;
+    music_message << emoji::clock() << " Start time evolution at tau = " << tau
+                  << " fm/c";
+    music_message.flush("info");
     while (tau < tauMax) {
         if (DATA.beastMode == 2 && it > 0 && (it % NtauBlock == 0)) {
             DATA.delta_tau = std::min(0.04, 2*DATA.delta_tau);
@@ -300,6 +303,8 @@ int Evolve::EvolveIt(Fields &arenaFieldsPrev, Fields &arenaFieldsCurr,
     }
     if (tau < tauMax) {
         music_message.info("Finished.");
+        music_message << "Final time is = " << tau << " fm/c";
+        music_message.flush("info");
     } else {
         music_message.warning("Maximum allowed time reached.");
     }
